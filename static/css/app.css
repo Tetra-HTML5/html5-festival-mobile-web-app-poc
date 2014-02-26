@@ -1,0 +1,10 @@
+#userImg{
+	width: 50px;
+	margin: 10px auto;
+}
+
+#fileElem{
+	visibility: hidden; 
+	width: 0; 
+	height: 0;
+}

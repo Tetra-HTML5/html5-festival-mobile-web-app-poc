@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>HTML5 WebApp</title>
+        <meta name="HandheldFriendly" content="True">
+        <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta name="format-detection" content="telephone=yes">
+        <meta http-equiv="cleartype" content="on">
+        <link rel="stylesheet" href="frameworks/lungo/lungo.css">
+        <link rel="stylesheet" href="frameworks/lungo/lungo.icon.css">
+        <link rel="stylesheet" href="frameworks/lungo/lungo.theme.css">
+        <link rel="stylesheet" href="static/css/app.css">
+    </head>
+    <body>
+
+    <section id="splash" data-transition="slide">
+        <article id="login" class="active indented splash">
+            <div class="empty">
+                <h1>Mobile webApp</h1>    
+                <span class="icon star" style="color:#fff; margin:20px 0;"></span>
+                <a href="#" class="button" data-icon="google-plus" data-label="Sign in with Google" id="triggerSignIn"></a>
+            </div>
+        </article>
+    </section>
+
+     <aside id="menu">
+        <header data-title="Menu"></header>
+        <article class="list scroll active">
+            <ul>
+                <li data-view-section="main"><strong>Home</strong></li>
+                <li data-view-section="video"><strong>Video</strong></li>
+            </ul>
+        </article>
+    </aside>
+
+    <section id="main" data-transition="slide" data-aside="menu">
+        <header data-title="Home">
+            <nav><a href="#" data-icon="menu" data-view-aside="menu"></a></nav>
+            <nav class="on-right"><small class="text tiny" style="margin-right:10px">v0.01</small></nav>
+        </header>
+
+        <article class="active indented" id="home">
+            <div class="empty">
+                <h1 id="userName">Welcome</h1>    
+                <img id="userImg">
+            </div>        
+        </article>
+    </section>
+
+    <section id="video" data-transition="slide" data-aside="menu">
+        <header data-title="Video">
+            <nav><a href="#" data-icon="menu" data-view-aside="menu"></a></nav>
+            <nav class="on-right"><small class="text tiny" style="margin-right:10px">v0.01</small></nav>
+        </header>
+        <article class="list scroll" id="videolist">
+            <ul id="videos"></ul>
+         </article>
+
+         <article class="list indented" id="videoupload">      
+            <div class="form">
+
+                <form id="upload-form">
+                
+                    <fieldset>
+                        <input id="title" type="text" placeholder="Title">
+                    </fieldset>
+                    <fieldset>
+                        <textarea placeholder="Description" id="description"></textarea>
+                    </fieldset>
+                        <input type="file" accept="video/*" id="fileElem" capture>
+                    </fieldset>
+                </form>
+
+                <button class="anchor button" data-icon="video" data-label="Choose or Record a Video" id="fileSelect"></button>
+                <button class="anchor button accept" data-icon="upload" data-label="Upload Video" id="fileUpload"></button>
+
+                <div id="uploadprogress"> 
+                    <label>Progress</label>
+                    <div id="progress-normal" data-progress="0%"></div>
+                </div>
+                <ul id="post-upload-status"></ul>
+
+            </div>
+
+
+        </article>
+
+        <footer>
+                <nav>
+                <a href="#" data-icon="film" class="active" data-view-article="videolist"></a>
+                <a href="#" data-icon="cloud-upload" data-view-article="videoupload"></a>
+                </nav>
+            </footer>
+
+    </section>
+
+
+
+    <script src="vendor/quo.js"></script>  
+    <script src="vendor/jquery-1.9.1.js"></script>      
+    <script src="frameworks/lungo/lungo.js"></script>
+    <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <script src="https://apis.google.com/js/client:plusone.js"></script>
+    <script src="static/js/auth.js"></script>
+    <script src="static/js/youtube-upload.js"></script>
+
+    <script>
+        Lungo.init({
+            history: false
+        });
+
+
+        
+        $( "#triggerSignIn" ).click(function() {
+            gplus_auth();
+        });
+
+
+        //disable rubberband effect on mobile browsers
+        $('body').on('touchmove', function (e) {
+            var searchTerms = '.scroll, .scroll-y, .scroll-x',
+            $target = $(e.target),
+            parents = $target.parents(searchTerms);
+
+                if (parents.length || $target.hasClass(searchTerms)) {
+                // ignore as we want the scroll to happen
+                } else {
+                    e.preventDefault();
+                }
+        });
+
+
+        Lungo.dom('#main').on('load', function(event){
+            
+            //if (Lungo.Cache.get("onload") == 1){
+                var userData = Lungo.Cache.get("userdata");
+                $("#userImg").attr("src", userData.image);
+                $("#userName").text("Welcome " + userData.name);
+            //}
+
+            Lungo.Cache.set("onload", 1);
+
+        }).on('unload',function(event){
+            Lungo.Cache.remove("onload");
+        });
+
+
+
+        Lungo.dom('#video').on('load', function(event){
+            
+            //if (Lungo.Cache.get("onload") == 1){
+                var userData = Lungo.Cache.get("userdata");
+                var userId = userData.id;
+                var videosRef = new Firebase('https://festivalapp.firebaseio.com/users/'+userId+'/videos/');
+                var accessToken = gapi.auth.getToken();
+                //console.log (accessToken);
+                videosRef.on('child_added', function(snapshot) {
+                    var videoInfo = snapshot.val();
+                    //console.log(videoInfo);
+                    var html ='<iframe title="YouTube video player" class="youtube-player" type="text/html" width="100%" height="" src="http://www.youtube.com/embed/'+videoInfo.video+'?showinfo=0&rel=0&showinfo=0&modestbranding=1" frameborder="0" allowFullScreen></iframe>';
+
+                    //$('#videos').append('<li><a href="http://youtube.com/watch?v='+videoInfo.video+'">'+videoInfo.video+'</a></li>');
+                    $('#videos').append('<li>'+html+'</li>');
+                });
+            //}
+            Lungo.Cache.set("onload", 1);
+
+        }).on('unload',function(event){
+             Lungo.Cache.remove("onload");
+        });
+
+        Lungo.dom('#videoupload').on('load', function(event){
+            
+            $("#fileSelect").show();
+            $("#fileUpload").hide();
+            $("#uploadprogress").hide();
+            
+            $( "#fileSelect" ).click(function() {
+                 $( "#fileElem").click();
+            });
+
+            $( "#fileElem" ).change(function() {
+                //var file = this.files;
+                $("#fileSelect").hide();
+                $("#fileUpload").show();
+            });
+
+            $( "#fileUpload" ).click(function() {
+                 $( "#fileUpload").hide();
+                 $( "#upload-form" ).submit();
+                 $( "#uploadprogress").show();
+            });
+
+        });
+        
+    </script>
+
+    </body>
+</html>
